@@ -1,0 +1,630 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+--======Login/Creation======--
+--- 1) Define your custom theme first
+local CustomTheme = {
+    TextColor = Color3.fromRGB(220, 220, 220),
+    Background = Color3.fromRGB(10, 10, 25),
+    Topbar = Color3.fromRGB(15, 15, 35),
+    Shadow = Color3.fromRGB(0, 0, 0),
+
+    NotificationBackground = Color3.fromRGB(15, 15, 35),
+    NotificationActionsBackground = Color3.fromRGB(50, 50, 50),
+
+    TabBackground = Color3.fromRGB(30, 30, 60),
+    TabStroke = Color3.fromRGB(40, 40, 80),
+    TabBackgroundSelected = Color3.fromRGB(0, 110, 255),
+    TabTextColor = Color3.fromRGB(200, 200, 255),
+    SelectedTabTextColor = Color3.fromRGB(0, 0, 20),
+
+    ElementBackground = Color3.fromRGB(20, 20, 45),
+    ElementBackgroundHover = Color3.fromRGB(30, 30, 70),
+    SecondaryElementBackground = Color3.fromRGB(10, 10, 25),
+    ElementStroke = Color3.fromRGB(0, 0, 50),
+    SecondaryElementStroke = Color3.fromRGB(15, 15, 35),
+
+    SliderBackground = Color3.fromRGB(0, 80, 255),
+    SliderProgress = Color3.fromRGB(0, 150, 255),
+    SliderStroke = Color3.fromRGB(0, 180, 255),
+
+    ToggleBackground = Color3.fromRGB(25, 25, 45),
+    ToggleEnabled = Color3.fromRGB(0, 160, 255),
+    ToggleDisabled = Color3.fromRGB(80, 80, 80),
+    ToggleEnabledStroke = Color3.fromRGB(0, 200, 255),
+    ToggleDisabledStroke = Color3.fromRGB(100, 100, 100),
+    ToggleEnabledOuterStroke = Color3.fromRGB(50, 50, 80),
+    ToggleDisabledOuterStroke = Color3.fromRGB(40, 40, 60),
+
+    DropdownSelected = Color3.fromRGB(25, 25, 50),
+    DropdownUnselected = Color3.fromRGB(15, 15, 35),
+
+    InputBackground = Color3.fromRGB(20, 20, 45),
+    InputStroke = Color3.fromRGB(60, 60, 100),
+    PlaceholderColor = Color3.fromRGB(150, 150, 180),
+
+    AccentColor = Color3.fromRGB(0, 150, 255),
+}
+
+-- 2) Pass the theme table to CreateWindow
+local Window = Rayfield:CreateWindow({
+    Name = "🐺Wolfscript X🐺",
+    Icon = 0,
+    LoadingTitle = "Loading all those scripts for you :333",
+    LoadingSubtitle = "by Wolfiy",
+    ShowText = "Open Menu",
+
+    Theme = CustomTheme,
+
+    ToggleUIKeybind = "K",
+    DisableRayfieldPrompts = false,
+    DisableBuildWarnings = false,
+
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = nil,
+        FileName = "WolfscriptSettingsConfig"
+    },
+
+    Discord = {
+        Enabled = false,
+        Invite = "noinvitelink",
+        RememberJoins = true
+    },
+
+    KeySystem = true,
+    KeySettings = {
+        Title = "🐺Wolfscript X🐺",
+        Subtitle = "LogIn",
+        Note = "If you don't have a Key ask the Owner for it XD!!",
+        FileName = "WolfscriptKeyConfig",
+        SaveKey = false,
+        GrabKeyFromSite = false,
+        Key = { "WolfiyBuild", "MiracleX2" }
+    }
+})
+
+Rayfield:Notify({
+    Title = "Script Ready!",
+    Content = "Welcome User :3!",
+    Duration = 6.5,
+    Image = nil,
+})
+
+--======GUI======--
+-----Tabs-----
+local MainDashTab = Window:CreateTab("✨Main Dashboard✨", nil)
+local UniversalTab = Window:CreateTab("🌌Universal🌌", nil)
+local ProjectDeltaTab = Window:CreateTab("⚡ProjectDelta⚡", nil)
+local MiscTab = Window:CreateTab("📦Misc📦", nil)
+local CreditsTab = Window:CreateTab("⭐Credits⭐", nil)
+local SettingsTab = Window:CreateTab("⚙️Settings⚙️", nil)
+
+
+-----Main Dashboard-----
+local InfoSection = MainDashTab:CreateSection("Important — Read Before Using")
+local Paragraph1 = MainDashTab:CreateParagraph({
+    Title = "About the Script",
+    Content =
+    "Wolfscript X is a script for ProjectDelta: features include aimbot, NPC & player ESP/visualizers, and a universal utilities tab for other games too. Provided as‑is — use it on your own risk. The author is not responsible for bans or account actions."
+})
+local Paragraph2 = MainDashTab:CreateParagraph({
+    Title = "General Info",
+    Content =
+    "Use at your own risk. I am not responsible for bans, account issues, or any consequences from using this script. This script is provided as‑is with no warranty; no guarantees it will remain undetected by anti‑cheat systems (I will work on keeping this undetected, of course). Do not share your account, password, or private keys with anyone — keep backups of important account data. If something goes wrong (hack, ban, error), I cannot and will not reverse platform actions; contact the game/platform support for appeals. Want to reduce risk? Use local testing only, avoid public servers, and don’t use known-cheat features in competitive environments."
+})
+local PrivacySection = MainDashTab:CreateSection("Privacy")
+local Paragraph3 = MainDashTab:CreateParagraph({
+    Title = "Important",
+    Content =
+    "Your account and personal data remain completely safe and untouched. This script does not collect, store, or modify any of your information."
+})
+local Label1 = MainDashTab:CreateLabel("🐺 Wolfscript X | Version 1.0", nil, Color3.fromRGB(0, 150, 255), false)
+-----Universal-----
+local Label2 = UniversalTab:CreateLabel("🐺 Universal X | Version 1.0", nil, Color3.fromRGB(0, 150, 255), false)
+local GeneralSection = UniversalTab:CreateSection("General Cheats")
+local InifnitJump = UniversalTab:CreateButton({
+    Name = "|InfinitJumpX Toggle|",
+    Callback = function()
+        loadstring(game:HttpGet("https://obj.wearedevs.net/2/scripts/Infinite%20Jump.lua"))()
+    end
+})
+
+local Label1 = MainDashTab:CreateLabel("🐺Fly GUI V3 by RBX Scripts | Version 3.0", nil, Color3.fromRGB(0, 150, 255),
+    false)
+local FlyX = UniversalTab:CreateButton({
+    Name = "|Fly GUI V3 Toggle|",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/FlyGuiV3.txt"))()
+    end
+})
+
+local EspXSection = UniversalTab:CreateSection("ESP")
+local Label1 = UniversalTab:CreateLabel("🐺ESPX by Wolfscript X | Version 1.0", nil, Color3.fromRGB(0, 150, 255), false)
+
+local Range = 3000
+local TeamCheck = false -- toggle on/off
+local CheckFriend = true
+local EspEnabled = false
+local CheckDistance = true
+local CheckHealth = true
+local CheckName = true
+local EspRange = 3000
+local VisibilityCheck = false
+local FillEspT = 0.5
+
+local Toggle = UniversalTab:CreateToggle({
+    Name = "|EXPX Toggle|",
+    CurrentValue = false,
+    Flag = "ToggleESPX",
+    Callback = function(Value)
+        local Players = game:GetService("Players")
+        local RunService = game:GetService("RunService")
+        local LocalPlayer = Players.LocalPlayer
+
+        local connections = {}
+        local playerConns = {} -- store per-player connections for cleanup
+
+        -- External toggles/values
+        -- EspEnabled, TeamCheck, CheckFriend, CheckDistance, CheckHealth, CheckName, EspRange
+
+        local function isFriend(pl)
+            return LocalPlayer:IsFriendsWith(pl.UserId)
+        end
+
+        local function getTeamMembers()
+            local teamMembers = {}
+            local gui = LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("MainGui")
+            if gui and gui:FindFirstChild("MainFrame") and gui.MainFrame:FindFirstChild("Clan") and gui.MainFrame.Clan:FindFirstChild("ManageClan") then
+                local listFrame = gui.MainFrame.Clan.ManageClan:FindFirstChild("ListFrame")
+                if listFrame then
+                    for _, item in ipairs(listFrame:GetChildren()) do
+                        if item:IsA("Frame") and item.Name ~= "" and not string.find(item.Name, "Temp") then
+                            -- Skip if Invite property exists and is truthy
+                            if not item:FindFirstChild("Invite") then
+                                local plr = Players:FindFirstChild(item.Name)
+                                if plr then
+                                    table.insert(teamMembers, plr.Name)
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+            return teamMembers
+        end
+
+        local function removeESP(char)
+            if char:FindFirstChild("Highlight") then
+                char.Highlight:Destroy()
+            end
+            local head = char:FindFirstChild("Head")
+            if head and head:FindFirstChild("ESPInfo") then
+                head.ESPInfo:Destroy()
+            end
+        end
+
+        local function applyESP(pl, char)
+            if pl == LocalPlayer then return end
+            removeESP(char)
+
+            local head = char:FindFirstChild("Head") or char:WaitForChild("Head")
+            local humanoid = char:FindFirstChild("Humanoid") or char:WaitForChild("Humanoid")
+
+            local highlight = Instance.new("Highlight")
+            highlight.OutlineColor = Color3.new(1, 1, 1)
+            highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+            highlight.Parent = char
+            highlight.Adornee = char
+            highlight.FillTransparency = FillEspT
+
+            local bill = Instance.new("BillboardGui")
+            bill.Name = "ESPInfo"
+            bill.AlwaysOnTop = true
+            bill.Size = UDim2.new(0, 180, 0, 60)
+            bill.StudsOffset = Vector3.new(0, 4, 0)
+            bill.Parent = head
+            bill.MaxDistance = EspRange or 1000
+
+            local label = Instance.new("TextLabel")
+            label.BackgroundTransparency = 1
+            label.Size = UDim2.new(1, 0, 1, 0)
+            label.TextColor3 = Color3.new(1, 1, 1)
+            label.TextStrokeTransparency = 0
+            label.Font = Enum.Font.SourceSansBold
+            label.TextScaled = true
+            label.Parent = bill
+
+            -- Loose visibility check function
+            local function isVisible(targetChar)
+                if not targetChar or not LocalPlayer.Character then return false end
+                local localRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if not localRoot then return false end
+
+                -- Check important parts (R6: Head, Torso, Left/Right Arm, Left/Right Leg, Root)
+                local partsToCheck = { "Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg",
+                    "HumanoidRootPart" }
+                for _, partName in ipairs(partsToCheck) do
+                    local part = targetChar:FindFirstChild(partName)
+                    if part then
+                        local direction = (part.Position - localRoot.Position)
+                        local raycastParams = RaycastParams.new()
+                        raycastParams.FilterDescendantsInstances = { LocalPlayer.Character, targetChar }
+                        raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+                        local ray = workspace:Raycast(localRoot.Position, direction, raycastParams)
+                        if not ray then
+                            -- At least one part is visible
+                            return true
+                        end
+                    end
+                end
+                return false -- all parts blocked
+            end
+
+            -- Full RenderStepped ESP loop
+            local conn
+            conn = RunService.RenderStepped:Connect(function()
+                if not char.Parent or not EspEnabled then
+                    label.Text = ""
+                    highlight.FillColor = Color3.new(1, 0, 0)
+                    highlight.Enabled = false
+                    return
+                end
+
+                highlight.FillTransparency = FillEspT
+
+                -- Get current team members once per frame
+                local teamMembers = TeamCheck and getTeamMembers() or {}
+
+                local nowFriend = CheckFriend and isFriend(pl)
+                local nowTeammate = TeamCheck and table.find(teamMembers, pl.Name) ~= nil
+
+                -- Color logic (Friend overrides team)
+                if nowTeammate then
+                    highlight.FillColor = Color3.new(0, 1, 0)         -- green
+                elseif nowFriend then
+                    highlight.FillColor = Color3.fromRGB(255, 165, 0) -- orange
+                else
+                    highlight.FillColor = Color3.new(1, 0, 0)         -- red
+                end
+
+                -- Distance check
+                local root = char:FindFirstChild("HumanoidRootPart")
+                local localRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                local show = true
+                if root and localRoot and EspRange then
+                    show = (root.Position - localRoot.Position).Magnitude <= EspRange
+                end
+
+                -- Visibility check
+                if show and VisibilityCheck and root and localRoot then
+                    show = isVisible(char)
+                end
+
+                label.Visible = show
+                highlight.Enabled = show
+
+                -- Build label text
+                if show then
+                    local text = ""
+                    if CheckName then text = text .. pl.Name .. "\n" end
+                    if CheckHealth then text = text .. "HP: " .. math.floor(humanoid.Health) .. "\n" end
+                    if CheckDistance and root and localRoot then
+                        text = text .. string.format("%.1f m", (root.Position - localRoot.Position).Magnitude)
+                    end
+                    label.Text = text
+                end
+            end)
+
+            -- Save connection to cleanup later
+            playerConns[pl] = conn
+            table.insert(connections, conn)
+        end
+
+        local function setupPlayer(pl)
+            if pl.Character then
+                applyESP(pl, pl.Character)
+            end
+            pl.CharacterAdded:Connect(function(char)
+                applyESP(pl, char)
+            end)
+        end
+
+        local function toggleESP(state)
+            EspEnabled = state
+
+            if EspEnabled then
+                -- Setup ESP for all current players
+                for _, pl in ipairs(Players:GetPlayers()) do
+                    setupPlayer(pl)
+                end
+
+                -- Setup ESP for new players joining
+                Players.PlayerAdded:Connect(setupPlayer)
+                Players.PlayerRemoving:Connect(function(pl)
+                    if playerConns[pl] then
+                        playerConns[pl]:Disconnect()
+                        playerConns[pl] = nil
+                    end
+                    if pl.Character then
+                        removeESP(pl.Character)
+                    end
+                end)
+            else
+                -- Remove all ESP
+                for _, pl in ipairs(Players:GetPlayers()) do
+                    if pl.Character then
+                        removeESP(pl.Character)
+                    end
+                end
+                for _, conn in ipairs(connections) do
+                    conn:Disconnect()
+                end
+                connections = {}
+                playerConns = {}
+            end
+        end
+
+        toggleESP(Value)
+    end
+})
+
+local TeamCheckToggle = UniversalTab:CreateToggle({
+    Name = "TeamCheck(Only ProjectDelta)",
+    CurrentValue = false,
+    Flag = "TeamCheckToggle", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+    Callback = function(Value)
+        if Value then
+            TeamCheck = true
+        else
+            TeamCheck = false
+        end
+    end
+})
+local DistanceChecktoggle = UniversalTab:CreateToggle({
+    Name = "Distance Check",
+    CurrentValue = true,
+    Flag = "DistanceChecktoggle", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+    Callback = function(Value)
+        if Value then
+            CheckDistance = true
+        else
+            CheckDistance = false
+        end
+    end,
+})
+local HealthCheckToggle = UniversalTab:CreateToggle({
+    Name = "Health Check",
+    CurrentValue = true,
+    Flag = "HealthCheckToggle", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+    Callback = function(Value)
+        if Value then
+            CheckHealth = true
+        else
+            CheckHealth = false
+        end
+    end,
+})
+local NameCheckToggle = UniversalTab:CreateToggle({
+    Name = "Name Check",
+    CurrentValue = true,
+    Flag = "NameCheckToggle", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+    Callback = function(Value)
+        if Value then
+            CheckName = true
+        else
+            CheckName = false
+        end
+    end,
+})
+local VisibilityCheckToggle = UniversalTab:CreateToggle({
+    Name = "Visibility Check",
+    CurrentValue = false,
+    Flag = "VisibilityCheckToggle", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+    Callback = function(Value)
+        if Value then
+            VisibilityCheck = true
+        else
+            VisibilityCheck = false
+        end
+    end,
+})
+local RangeSlider = UniversalTab:CreateSlider({
+    Name = "EspX Range",
+    Range = { 0, 10000 },
+    Increment = 1,
+    Suffix = "Meter",
+    CurrentValue = 3000,
+    Flag = "RangeSlider", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+    Callback = function(Value)
+        EspRange = Value
+    end,
+})
+local EspXT = UniversalTab:CreateSlider({
+    Name = "Esp Fill Strength",
+    Range = { 0, 1 },
+    Increment = 0.1,
+    Suffix = "",
+    CurrentValue = 0.5,
+    Flag = "EspXT", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+    Callback = function(Value)
+        FillEspT = Value
+    end,
+})
+local TracerXSection = UniversalTab:CreateSection("Tracer")
+local Label1 = UniversalTab:CreateLabel("🐺TRACERX by Wolfscript X | Version 1.0", nil, Color3.fromRGB(0, 150, 255), false)
+
+local TracerEnabled = false
+local TracerRange = 3000
+local CheckTeam = false
+local CheckFriend = true
+
+local TracerXToggle = UniversalTab:CreateToggle({
+    Name = "|TRACERX Toggle|",
+    CurrentValue = false,
+    Flag = "TracerXToggle", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+    Callback = function(Value)
+        local Players = game:GetService("Players")
+        local RunService = game:GetService("RunService")
+        local LocalPlayer = Players.LocalPlayer
+        local camera = workspace.CurrentCamera
+
+        -- External toggles/values
+        -- TracerEnabled, CheckTeam, CheckFriend, TracerRange (number)
+        local tracers = {}
+
+        -- Utility
+        local function isFriend(pl)
+            return LocalPlayer:IsFriendsWith(pl.UserId)
+        end
+
+        -- Same as your ESP: get current team members from GUI
+        local function getTeamMembers()
+            local teamMembers = {}
+            local gui = LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("MainGui")
+            if gui and gui:FindFirstChild("MainFrame") and gui.MainFrame:FindFirstChild("Clan") and gui.MainFrame.Clan:FindFirstChild("ManageClan") then
+                local listFrame = gui.MainFrame.Clan.ManageClan:FindFirstChild("ListFrame")
+                if listFrame then
+                    for _, item in ipairs(listFrame:GetChildren()) do
+                        if item:IsA("Frame") and item.Name ~= "" and not string.find(item.Name, "Temp") then
+                            if not item:FindFirstChild("Invite") then
+                                local plr = Players:FindFirstChild(item.Name)
+                                if plr then
+                                    table.insert(teamMembers, plr.Name)
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+            return teamMembers
+        end
+
+        local function AddTracer(pl)
+            local tracer = Drawing.new("Line")
+            tracer.Visible = false
+            tracer.Thickness = 1
+            tracer.Transparency = 1
+
+            local conn
+            conn = RunService.RenderStepped:Connect(function()
+                if not TracerEnabled or not pl.Character then
+                    tracer.Visible = false
+                    return
+                end
+
+                local root = pl.Character:FindFirstChild("HumanoidRootPart")
+                local humanoid = pl.Character:FindFirstChild("Humanoid")
+                local localRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+
+                if root and humanoid and humanoid.Health > 0 and localRoot then
+                    local distance = (root.Position - localRoot.Position).Magnitude
+                    if TracerRange and distance > TracerRange then
+                        tracer.Visible = false
+                        return
+                    end
+
+                    local screenPos, onScreen = camera:WorldToViewportPoint(root.Position)
+                    if onScreen then
+                        tracer.From = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
+                        tracer.To = Vector2.new(screenPos.X, screenPos.Y)
+
+                        -- Color logic same as ESP
+                        local teamMembers = CheckTeam and getTeamMembers() or {}
+                        local nowTeammate = CheckTeam and table.find(teamMembers, pl.Name) ~= nil
+                        local nowFriend = CheckFriend and isFriend(pl)
+
+                        if nowTeammate then
+                            tracer.Color = Color3.fromRGB(0, 255, 0)   -- green
+                        elseif nowFriend then
+                            tracer.Color = Color3.fromRGB(255, 165, 0) -- orange
+                        else
+                            tracer.Color = Color3.fromRGB(255, 0, 0)   -- red
+                        end
+
+                        tracer.Visible = true
+                    else
+                        tracer.Visible = false
+                    end
+                else
+                    tracer.Visible = false
+                end
+            end)
+
+            tracers[pl] = { tracer = tracer, conn = conn }
+        end
+
+        -- Setup for all current players
+        for _, pl in ipairs(Players:GetPlayers()) do
+            if pl ~= LocalPlayer then
+                AddTracer(pl)
+            end
+        end
+
+        -- Setup for new players joining
+        Players.PlayerAdded:Connect(function(pl)
+            if pl ~= LocalPlayer then
+                AddTracer(pl)
+            end
+        end)
+
+        -- Cleanup function
+        local function RemoveAllTracers()
+            for _, data in pairs(tracers) do
+                if data.conn then data.conn:Disconnect() end
+                if data.tracer then data.tracer:Remove() end
+            end
+            tracers = {}
+        end
+
+        -- Toggle function
+        local function ToggleTracers(state)
+            TracerEnabled = state
+            if not state then
+                RemoveAllTracers()
+            else
+                for _, pl in ipairs(Players:GetPlayers()) do
+                    if pl ~= LocalPlayer and not tracers[pl] then
+                        AddTracer(pl)
+                    end
+                end
+            end
+        end
+
+        -- Start on run
+        ToggleTracers(Value)
+    end,
+})
+local TeamCheckToggle2 = UniversalTab:CreateToggle({
+    Name = "Team Check(Only ProjectDelta)",
+    CurrentValue = false,
+    Flag = "TeamCheckToggle2", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+    Callback = function(Value)
+        if Value then
+            CheckTeam = true
+        else
+            CheckTeam = false
+        end
+    end,
+})
+local FriendCheckToggle2 = UniversalTab:CreateToggle({
+    Name = "Friend Check",
+    CurrentValue = true,
+    Flag = "FriendCheckToggle2", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+    Callback = function(Value)
+        if Value then
+            CheckFriend = true
+        else
+            CheckFriend = false
+        end
+    end,
+})
+local TracerRangeSlider = UniversalTab:CreateSlider({
+    Name = "TracerX Range",
+    Range = { 0, 10000 },
+    Increment = 1,
+    Suffix = "Meter",
+    CurrentValue = 3000,
+    Flag = "TracerRangeSlider", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+    Callback = function(Value)
+        TracerRange = Value
+    end,
+})
