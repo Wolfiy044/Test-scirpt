@@ -76,7 +76,7 @@ local Window = Rayfield:CreateWindow({
         Subtitle = "LogIn",
         Note = "If you don't have a Key ask the Owner for it XD!!",
         FileName = "WolfscriptKeyConfig",
-        SaveKey = false,
+        SaveKey = true,
         GrabKeyFromSite = false,
         Key = { "WolfiyBuild", "MiracleX2" }
     }
@@ -140,10 +140,8 @@ local FlyX = UniversalTab:CreateButton({
 local EspXSection = UniversalTab:CreateSection("ESP")
 local Label1 = UniversalTab:CreateLabel("🐺ESPX by Wolfscript X | Version 1.0", nil, Color3.fromRGB(0, 150, 255), false)
 
-local Range = 3000
 local TeamCheck = false -- toggle on/off
 local CheckFriend = true
-local EspEnabled = false
 local CheckDistance = true
 local CheckHealth = true
 local CheckName = true
@@ -156,20 +154,36 @@ local Toggle = UniversalTab:CreateToggle({
     CurrentValue = false,
     Flag = "ToggleESPX",
     Callback = function(Value)
+        --// Services
         local Players = game:GetService("Players")
         local RunService = game:GetService("RunService")
         local LocalPlayer = Players.LocalPlayer
+        local Camera = workspace.CurrentCamera
+        local Workspace = game:GetService("Workspace")
 
-        local connections = {}
-        local playerConns = {} -- store per-player connections for cleanup
+        --// External Config Values (controlled outside)
+        _G.TeamCheck = TeamCheck
+        _G.FriendCheck = CheckFriend
+        _G.Range = EspRange
+        _G.CheckDistance = CheckDistance
+        _G.CheckHealth = CheckHealth
+        _G.CheckName = CheckName
+        _G.FillEspT = FillEspT
+        _G.VisibilityCheck = VisibilityCheck
+        _G.ESPEnabled = false -- <-- default state (you can set false)
+        _G.RunConnection = nil
 
-        -- External toggles/values
-        -- EspEnabled, TeamCheck, CheckFriend, CheckDistance, CheckHealth, CheckName, EspRange
-
-        local function isFriend(pl)
-            return LocalPlayer:IsFriendsWith(pl.UserId)
+        --// Toggle function
+        function toggleESP(Value)
+            _G.ESPEnabled = Value
+            if Value then
+                print("[ESP] Activated")
+            else
+                print("[ESP] Deactivated")
+            end
         end
 
+        --// Team check function
         local function getTeamMembers()
             local teamMembers = {}
             local gui = LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("MainGui")
@@ -178,7 +192,6 @@ local Toggle = UniversalTab:CreateToggle({
                 if listFrame then
                     for _, item in ipairs(listFrame:GetChildren()) do
                         if item:IsA("Frame") and item.Name ~= "" and not string.find(item.Name, "Temp") then
-                            -- Skip if Invite property exists and is truthy
                             if not item:FindFirstChild("Invite") then
                                 local plr = Players:FindFirstChild(item.Name)
                                 if plr then
@@ -192,176 +205,158 @@ local Toggle = UniversalTab:CreateToggle({
             return teamMembers
         end
 
-        local function removeESP(char)
-            if char:FindFirstChild("Highlight") then
-                char.Highlight:Destroy()
-            end
+        --// Visibility check
+        local function isVisible(char)
             local head = char:FindFirstChild("Head")
-            if head and head:FindFirstChild("ESPInfo") then
-                head.ESPInfo:Destroy()
-            end
+            if not head then return false end
+            local origin = Camera.CFrame.Position
+            local direction = (head.Position - origin)
+            local params = RaycastParams.new()
+            params.FilterDescendantsInstances = { LocalPlayer.Character, char }
+            params.FilterType = Enum.RaycastFilterType.Blacklist
+            local result = Workspace:Raycast(origin, direction, params)
+            return (not result or result.Instance:IsDescendantOf(char))
         end
 
-        local function applyESP(pl, char)
-            if pl == LocalPlayer then return end
-            removeESP(char)
+        --// ESP creation
+        --// Apply ESP to Player
+        local function CreateESP(plr)
+            if plr == LocalPlayer then return end
 
-            local head = char:FindFirstChild("Head") or char:WaitForChild("Head")
-            local humanoid = char:FindFirstChild("Humanoid") or char:WaitForChild("Humanoid")
-
-            local highlight = Instance.new("Highlight")
-            highlight.OutlineColor = Color3.new(1, 1, 1)
-            highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-            highlight.Parent = char
-            highlight.Adornee = char
-            highlight.FillTransparency = FillEspT
-
-            local bill = Instance.new("BillboardGui")
-            bill.Name = "ESPInfo"
-            bill.AlwaysOnTop = true
-            bill.Size = UDim2.new(0, 180, 0, 60)
-            bill.StudsOffset = Vector3.new(0, 4, 0)
-            bill.Parent = head
-            bill.MaxDistance = EspRange or 1000
-
-            local label = Instance.new("TextLabel")
-            label.BackgroundTransparency = 1
-            label.Size = UDim2.new(1, 0, 1, 0)
-            label.TextColor3 = Color3.new(1, 1, 1)
-            label.TextStrokeTransparency = 0
-            label.Font = Enum.Font.SourceSansBold
-            label.TextScaled = true
-            label.Parent = bill
-
-            -- Loose visibility check function
-            local function isVisible(targetChar)
-                if not targetChar or not LocalPlayer.Character then return false end
-                local localRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                if not localRoot then return false end
-
-                -- Check important parts (R6: Head, Torso, Left/Right Arm, Left/Right Leg, Root)
-                local partsToCheck = { "Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg",
-                    "HumanoidRootPart" }
-                for _, partName in ipairs(partsToCheck) do
-                    local part = targetChar:FindFirstChild(partName)
-                    if part then
-                        local direction = (part.Position - localRoot.Position)
-                        local raycastParams = RaycastParams.new()
-                        raycastParams.FilterDescendantsInstances = { LocalPlayer.Character, targetChar }
-                        raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-                        local ray = workspace:Raycast(localRoot.Position, direction, raycastParams)
-                        if not ray then
-                            -- At least one part is visible
-                            return true
-                        end
-                    end
-                end
-                return false -- all parts blocked
+            -- Cleanup existing ESP if re-run
+            if plr:FindFirstChild("ESP_Info") then
+                plr.ESP_Info:Destroy()
             end
 
-            -- Full RenderStepped ESP loop
-            local conn
-            conn = RunService.RenderStepped:Connect(function()
-                if not char.Parent or not EspEnabled then
-                    label.Text = ""
-                    highlight.FillColor = Color3.new(1, 0, 0)
+            -- Create highlight
+            local highlight = Instance.new("Highlight")
+            highlight.Name = "ESP_Highlight"
+            local EspFolder = Instance.new("Folder")
+            EspFolder.Name = "Checkers"
+            EspFolder.Parent = workspace
+            highlight.Parent = EspFolder
+            highlight.Adornee = nil
+            highlight.Enabled = false
+            highlight.FillTransparency = 1 - _G.FillEspT
+            highlight.OutlineTransparency = 0
+
+            -- Create Drawing box
+            local box = Drawing.new("Square")
+            box.Visible = false
+            box.Color = Color3.new(1, 1, 1)
+            box.Thickness = 1.5
+            box.Transparency = 1
+            box.Filled = false
+
+            -- Create Billboard
+            local billboard = Instance.new("BillboardGui")
+            billboard.Name = "ESP_Info"
+            billboard.AlwaysOnTop = true
+            billboard.Size = UDim2.new(0, 200, 0, 50)
+            billboard.Enabled = false
+
+            local text = Instance.new("TextLabel")
+            text.Parent = billboard
+            text.BackgroundTransparency = 1
+            text.Size = UDim2.new(1, 0, 1, 0)
+            text.Font = Enum.Font.Code
+            text.TextColor3 = Color3.fromRGB(255, 255, 255)
+            text.TextScaled = true
+            text.TextStrokeTransparency = 0.3
+
+            local function updateColor()
+                local teamList = getTeamMembers()
+                if _G.TeamCheck and table.find(teamList, plr.Name) then
+                    highlight.FillColor = Color3.fromRGB(0, 255, 0)
+                    box.Color = Color3.fromRGB(0, 255, 0)
+                    text.TextColor3 = Color3.fromRGB(0, 255, 0)
+                elseif _G.FriendCheck and LocalPlayer:IsFriendsWith(plr.UserId) then
+                    highlight.FillColor = Color3.fromRGB(255, 170, 0)
+                    box.Color = Color3.fromRGB(255, 170, 0)
+                    text.TextColor3 = Color3.fromRGB(255, 170, 0)
+                else
+                    highlight.FillColor = Color3.fromRGB(255, 0, 0)
+                    box.Color = Color3.fromRGB(255, 0, 0)
+                    text.TextColor3 = Color3.fromRGB(255, 0, 0)
+                end
+            end
+
+            local function updateESP()
+                if not _G.ESPEnabled then
                     highlight.Enabled = false
+                    box.Visible = false
+                    billboard.Enabled = false
                     return
                 end
 
-                highlight.FillTransparency = FillEspT
+                local char = plr.Character
+                if not char or not char:FindFirstChild("HumanoidRootPart") then
+                    highlight.Adornee = nil
+                    box.Visible = false
+                    billboard.Enabled = false
+                    return
+                end
 
-                -- Get current team members once per frame
-                local teamMembers = TeamCheck and getTeamMembers() or {}
+                local root = char.HumanoidRootPart
+                local head = char:FindFirstChild("Head") or root
+                local humanoid = char:FindFirstChildOfClass("Humanoid")
+                local dist = (Camera.CFrame.Position - root.Position).Magnitude
 
-                local nowFriend = CheckFriend and isFriend(pl)
-                local nowTeammate = TeamCheck and table.find(teamMembers, pl.Name) ~= nil
-
-                -- Color logic (Friend overrides team)
-                if nowTeammate then
-                    highlight.FillColor = Color3.new(0, 1, 0)         -- green
-                elseif nowFriend then
-                    highlight.FillColor = Color3.fromRGB(255, 165, 0) -- orange
+                if _G.Range and dist > _G.Range then
+                    highlight.Enabled = true -- keep visible even far away
+                    highlight.Adornee = char
+                    box.Visible = false
+                    billboard.Enabled = true
                 else
-                    highlight.FillColor = Color3.new(1, 0, 0)         -- red
+                    highlight.Adornee = char
                 end
 
-                -- Distance check
-                local root = char:FindFirstChild("HumanoidRootPart")
-                local localRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                local show = true
-                if root and localRoot and EspRange then
-                    show = (root.Position - localRoot.Position).Magnitude <= EspRange
-                end
+                local rootPos, onScreen = Camera:WorldToViewportPoint(root.Position)
+                local headPos = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
+                local legPos = Camera:WorldToViewportPoint(root.Position - Vector3.new(0, 3, 0))
 
-                -- Visibility check
-                if show and VisibilityCheck and root and localRoot then
-                    show = isVisible(char)
-                end
+                if onScreen then
+                    local h = headPos.Y - legPos.Y
+                    local w = h / 2
+                    box.Size = Vector2.new(w, h)
+                    box.Position = Vector2.new(rootPos.X - w / 2, rootPos.Y - h / 2)
+                    box.Visible = true
 
-                label.Visible = show
-                highlight.Enabled = show
-
-                -- Build label text
-                if show then
-                    local text = ""
-                    if CheckName then text = text .. pl.Name .. "\n" end
-                    if CheckHealth then text = text .. "HP: " .. math.floor(humanoid.Health) .. "\n" end
-                    if CheckDistance and root and localRoot then
-                        text = text .. string.format("%.1f m", (root.Position - localRoot.Position).Magnitude)
+                    billboard.Parent = head
+                    local infoText = ""
+                    if _G.CheckName then infoText = infoText .. plr.Name end
+                    if humanoid and _G.CheckHealth then
+                        infoText = infoText ..
+                            string.format(" | %d HP", math.floor(humanoid.Health))
                     end
-                    label.Text = text
+                    if _G.CheckDistance then infoText = infoText .. string.format(" | %dm", math.floor(dist)) end
+                    text.Text = infoText
+
+                    updateColor()
+                    highlight.Enabled = true
+                    billboard.Enabled = true
+                else
+                    box.Visible = false
+                    highlight.Enabled = true -- still visible even when off-screen
+                    billboard.Enabled = false
                 end
-            end)
-
-            -- Save connection to cleanup later
-            playerConns[pl] = conn
-            table.insert(connections, conn)
-        end
-
-        local function setupPlayer(pl)
-            if pl.Character then
-                applyESP(pl, pl.Character)
             end
-            pl.CharacterAdded:Connect(function(char)
-                applyESP(pl, char)
+
+            -- keep updating no matter what
+            RunService.RenderStepped:Connect(updateESP)
+
+            -- respawn handler
+            plr.CharacterAdded:Connect(function()
+                task.wait(1)
+                updateESP()
             end)
         end
 
-        local function toggleESP(state)
-            EspEnabled = state
-
-            if EspEnabled then
-                -- Setup ESP for all current players
-                for _, pl in ipairs(Players:GetPlayers()) do
-                    setupPlayer(pl)
-                end
-
-                -- Setup ESP for new players joining
-                Players.PlayerAdded:Connect(setupPlayer)
-                Players.PlayerRemoving:Connect(function(pl)
-                    if playerConns[pl] then
-                        playerConns[pl]:Disconnect()
-                        playerConns[pl] = nil
-                    end
-                    if pl.Character then
-                        removeESP(pl.Character)
-                    end
-                end)
-            else
-                -- Remove all ESP
-                for _, pl in ipairs(Players:GetPlayers()) do
-                    if pl.Character then
-                        removeESP(pl.Character)
-                    end
-                end
-                for _, conn in ipairs(connections) do
-                    conn:Disconnect()
-                end
-                connections = {}
-                playerConns = {}
-            end
+        --// Reapply to all players
+        for _, p in ipairs(Players:GetPlayers()) do
+            CreateESP(p)
         end
+        Players.PlayerAdded:Connect(CreateESP)
 
         toggleESP(Value)
     end
@@ -634,84 +629,160 @@ local AimbotSection = ProjectDeltaTab:CreateSection("Aimbot")
 local Label1 = ProjectDeltaTab:CreateLabel("🐺AimbotX by Wolfscript X | Version 1.0", nil, Color3.fromRGB(0, 150, 255),
     false)
 
-local Toggle = Tab:CreateToggle({
-    Name = "Toggle Example",
+local AKeybind = "MouseButton2"
+local ATeamCheck = false
+local AWallCheck = false
+local ASticky = true
+local AFov = 80
+local AStrength = 0.5
+local AAimpart = "Head"
+local AFovColor = Color3.fromRGB(100, 0, 100)
+local AToggleKey = "RightControl"
+
+local PEnabled = false
+local PStrength = 0.18
+local PSpeed = nil
+
+local AimbotXToggle = ProjectDeltaTab:CreateToggle({
+    Name = "|AimbotX Toggle|",
     CurrentValue = false,
-    Flag = "Toggle1", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+    Flag = "AimbotXToggle", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
     Callback = function(Value)
+        -- 🔥 Dynamic Aimbot (auto-updating config + sticky + GUI team check)
+        -- LocalScript -> StarterPlayerScripts
+
         local Players = game:GetService("Players")
         local RunService = game:GetService("RunService")
         local UIS = game:GetService("UserInputService")
         local PLAYER = Players.LocalPlayer
-        local CurrentCam = workspace.CurrentCamera
-        local WorldToViewportPoint = CurrentCam and CurrentCam.WorldToViewportPoint
+        local Camera = workspace.CurrentCamera
 
-        -- Simple config (adjust as needed)
-        local Aimbot = {
-            Enabled = true,   -- starts enabled on run
-            Keybind = "MouseButton2", -- "MouseButton1", or a KeyCode.Name like "E"
-            IsAimKeyDown = false,
-            TeamCheck = false,
-            WallCheck = false,
-            ShowFov = true,
-            Fov = 60, -- screen-space radius in pixels
-            Smoothing = 0, -- smoothing factor
-            AimPart = "Head",
-            FovColor = Color3.fromRGB(100, 0, 100),
-            ToggleKey = "RightControl" -- Key to toggle the whole aimbot on/off
-        }
+        -- ========= STATE =========
+        local Enabled = true
+        local IsAimKeyDown = false
+        local prev = {}
+        local stickyTarget = nil
 
-        -- Minimal FOV GUI
+        -- ========= FOV GUI =========
         local gui = Instance.new("ScreenGui")
         gui.Name = "AimbotGui"
         gui.Parent = PLAYER:WaitForChild("PlayerGui")
         gui.ResetOnSpawn = false
 
         local fovFrame = Instance.new("Frame")
-        fovFrame.Name = "FOV"
         fovFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-        fovFrame.Size = UDim2.new(0, Aimbot.Fov, 0, Aimbot.Fov)
-        fovFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
         fovFrame.BackgroundTransparency = 1
         fovFrame.Parent = gui
 
-        local uic = Instance.new("UICorner")
-        uic.CornerRadius = UDim.new(1, 0)
-        uic.Parent = fovFrame
-
         local stroke = Instance.new("UIStroke")
         stroke.Thickness = 1
-        stroke.Color = Aimbot.FovColor
         stroke.Parent = fovFrame
 
-        -- Utility: ray / visibility
-        local function isVisible(pos, ...)
-            if not Aimbot.WallCheck then
-                return true
+        -- ========= TEAM CHECK =========
+        local function getTeamMembers()
+            local teamMembers = {}
+            local gui = PLAYER:FindFirstChild("PlayerGui") and PLAYER.PlayerGui:FindFirstChild("MainGui")
+            if gui and gui:FindFirstChild("MainFrame") and gui.MainFrame:FindFirstChild("Clan") and gui.MainFrame.Clan:FindFirstChild("ManageClan") then
+                local listFrame = gui.MainFrame.Clan.ManageClan:FindFirstChild("ListFrame")
+                if listFrame then
+                    for _, item in ipairs(listFrame:GetChildren()) do
+                        if item:IsA("Frame") and item.Name ~= "" and not string.find(item.Name, "Temp") then
+                            if not item:FindFirstChild("Invite") then
+                                local plr = Players:FindFirstChild(item.Name)
+                                if plr then
+                                    table.insert(teamMembers, plr.Name)
+                                end
+                            end
+                        end
+                    end
+                end
             end
-            if not CurrentCam then return true end
-            return #CurrentCam:GetPartsObscuringTarget({ pos }, { CurrentCam, PLAYER.Character, ... }) == 0
+            return teamMembers
         end
 
-        -- Find closest player to mouse within FOV (screen-space)
-        local function CameraGetClosestToMouse(Fov)
-            if not CurrentCam then return nil end
-            local aimFov = Fov
+        -- ========= HELPERS =========
+        local function safeWTVP(pos)
+            if not Camera then return nil, false end
+            return Camera:WorldToViewportPoint(pos)
+        end
+
+        local function isVisible(worldPos, ...)
+            if not Camera then return true end
+            local ignore = { Camera, PLAYER.Character }
+            for _, v in ipairs({ ... }) do
+                if v then table.insert(ignore, v) end
+            end
+            local parts = Camera:GetPartsObscuringTarget({ worldPos }, ignore)
+            return #parts == 0
+        end
+
+        local function estimateVelocity(userId, newPos, dt)
+            local p = prev[userId]
+            if not p or not dt or dt <= 0 then
+                return Vector3.new(0, 0, 0)
+            end
+            return (newPos - p.pos) / dt
+        end
+
+        local function computeLead(pos, vel, fromPos, projectileSpeed, predictionStrength)
+            if projectileSpeed and projectileSpeed > 0 and fromPos then
+                local dist = (pos - fromPos).Magnitude
+                local t = dist / projectileSpeed
+                return vel * t
+            else
+                return vel * predictionStrength
+            end
+        end
+
+        local function getPredictedPosition(plr, aimPartPos, dt, predictionEnabled, projectileSpeed, predictionStrength)
+            if not predictionEnabled or not dt then return aimPartPos end
+            local uid = plr.UserId
+            local vel = estimateVelocity(uid, aimPartPos, dt)
+            local hrp = PLAYER.Character and PLAYER.Character:FindFirstChild("HumanoidRootPart")
+            local lead = computeLead(aimPartPos, vel, hrp and hrp.Position or nil, projectileSpeed, predictionStrength)
+            return aimPartPos + lead
+        end
+
+        local function aimAtPosition(worldPos, smooth)
+            if not worldPos or not Camera then return end
+            local hrp = PLAYER.Character and PLAYER.Character:FindFirstChild("HumanoidRootPart")
+            if not hrp then return end
+
+            local distance = (hrp.Position - worldPos).Magnitude
+            local distFactor = math.max(1, distance / 10)
+            local offset = -smooth * distFactor
+            local cam = Camera.CFrame
+            local worldPoint = cam:PointToWorldSpace(Vector3.new(0, 0, offset))
+            local lookAt = worldPoint:Lerp(worldPos, 0.01)
+            Camera.CFrame = CFrame.lookAt(cam.Position, lookAt)
+        end
+
+        local function isValidTarget(plr, teamMembers, teamCheck)
+            if not plr or plr == PLAYER or not plr.Character then return false end
+            local humanoid = plr.Character:FindFirstChild("Humanoid")
+            local part = plr.Character:FindFirstChild("Head")
+            if not humanoid or humanoid.Health <= 0 or not part then return false end
+            if teamCheck and teamMembers and table.find(teamMembers, plr.Name) then return false end
+            return true
+        end
+
+        local function getClosestToMouse(fov, teamMembers, teamCheck, wallCheck)
+            if not Camera then return nil end
+
+            local aimFov = fov
             local target = nil
-            local mousePos = UIS:GetMouseLocation()
-            local mouse2 = Vector2.new(mousePos.X, mousePos.Y - 36)
+            local mouse = UIS:GetMouseLocation()
+            local mouseVec = Vector2.new(mouse.X, mouse.Y - 36)
 
             for _, plr in pairs(Players:GetPlayers()) do
-                if plr ~= PLAYER and plr.Character and plr.Character:FindFirstChild(Aimbot.AimPart) and plr.Character:FindFirstChild("Humanoid") and plr.Character.Humanoid.Health > 0 then
-                    if Aimbot.TeamCheck and plr.Team == PLAYER.Team then
-                        -- skip teammates
-                    else
-                        local worldPos = plr.Character[Aimbot.AimPart].Position
-                        local screenPos, onScreen = WorldToViewportPoint(CurrentCam, worldPos)
-                        if onScreen then
-                            local screen2 = Vector2.new(screenPos.X, screenPos.Y)
-                            local dist = (screen2 - mouse2).Magnitude
-                            if dist < aimFov and isVisible(worldPos, plr.Character.Head and plr.Character.Head.Parent) then
+                if isValidTarget(plr, teamMembers, teamCheck) then
+                    local part = plr.Character:FindFirstChild("Head")
+                    local v3, onScreen = safeWTVP(part.Position)
+                    if onScreen then
+                        local screenPos = Vector2.new(v3.X, v3.Y)
+                        local dist = (screenPos - mouseVec).Magnitude
+                        if dist < aimFov then
+                            if not wallCheck or isVisible(part.Position, plr.Character.Head and plr.Character.Head.Parent) then
                                 aimFov = dist
                                 target = plr
                             end
@@ -719,90 +790,615 @@ local Toggle = Tab:CreateToggle({
                     end
                 end
             end
+
             return target
         end
 
-        -- Aim the camera at the specified player's AimPart using a smoothing factor
-        local function aimAt(plr, smooth)
-            if not plr or not plr.Character or not CurrentCam then return end
-            local aimPart = plr.Character:FindFirstChild(Aimbot.AimPart)
-            local hrp = PLAYER.Character and PLAYER.Character:FindFirstChild("HumanoidRootPart")
-            if not aimPart or not hrp then return end
+        -- ========= INPUT =========
+        UIS.InputBegan:Connect(function(input, processed)
+            if processed then return end
 
-            local distance = (hrp.Position - aimPart.Position).magnitude
-            local distFactor = math.max(1, distance / 10)
-            local offset = -smooth * distFactor
-            local cam = CurrentCam.CFrame
-            local worldPoint = cam:PointToWorldSpace(Vector3.new(0, 0, offset))
-            local lookAt = worldPoint:Lerp(aimPart.Position, 0.01)
-            CurrentCam.CFrame = CFrame.lookAt(cam.Position, lookAt)
-        end
-
-        -- Toggle function (turn aimbot on/off)
-        local function ToggleAimbot(state)
-            Aimbot.Enabled = state
-            fovFrame.Visible = (Aimbot.ShowFov and state)
-            -- optional: notify
-            print(("Aimbot %s"):format(state and "ENABLED" or "DISABLED"))
-        end
-
-        -- Input handling (supports MouseButton1/2 and KeyCode names)
-        UIS.InputBegan:Connect(function(input, gameProcessed)
-            if gameProcessed then return end
-
-            -- Aim key down
-            if Aimbot.Keybind == "MouseButton2" and input.UserInputType == Enum.UserInputType.MouseButton2 then
-                Aimbot.IsAimKeyDown = true
-            elseif Aimbot.Keybind == "MouseButton1" and input.UserInputType == Enum.UserInputType.MouseButton1 then
-                Aimbot.IsAimKeyDown = true
-            elseif input.KeyCode and input.KeyCode.Name == Aimbot.Keybind then
-                Aimbot.IsAimKeyDown = true
+            if (input.UserInputType == Enum.UserInputType.MouseButton2) then
+                IsAimKeyDown = true
             end
 
-            -- Toggle key (press to toggle on/off)
-            if input.KeyCode and input.KeyCode.Name == Aimbot.ToggleKey then
-                ToggleAimbot(not Aimbot.Enabled)
+            if input.KeyCode == Enum.KeyCode.RightControl then
+                Enabled = not Enabled
+                print("Aimbot", Enabled and "ON" or "OFF")
             end
         end)
 
-        UIS.InputEnded:Connect(function(input, gameProcessed)
-            if gameProcessed then return end
-            if Aimbot.Keybind == "MouseButton2" and input.UserInputType == Enum.UserInputType.MouseButton2 then
-                Aimbot.IsAimKeyDown = false
-            elseif Aimbot.Keybind == "MouseButton1" and input.UserInputType == Enum.UserInputType.MouseButton1 then
-                Aimbot.IsAimKeyDown = false
-            elseif input.KeyCode and input.KeyCode.Name == Aimbot.Keybind then
-                Aimbot.IsAimKeyDown = false
+        UIS.InputEnded:Connect(function(input, processed)
+            if processed then return end
+            if (input.UserInputType == Enum.UserInputType.MouseButton2) then
+                IsAimKeyDown = false
+                stickyTarget = nil
             end
         end)
 
-        -- Ensure starting state (toggle on run)
-        ToggleAimbot(Aimbot.Enabled)
+        -- ========= MAIN LOOP =========
+        RunService.RenderStepped:Connect(function(dt)
+            if not Camera then Camera = workspace.CurrentCamera end
 
-        -- Main loop
-        RunService.RenderStepped:Connect(function()
-            -- Update FOV GUI
-            if Aimbot.ShowFov and Aimbot.Enabled then
+            -- 🔁 Read external values each frame (auto-updating)
+            local TeamCheck = ATeamCheck or false
+            local WallCheck = AWallCheck or false
+            local ShowFov = true
+            local Fov = AFov or 80
+            local Smoothing = AStrength or 0
+            local AimPart = AAimpart[1] or "Head"
+            local PredictionEnabled = PEnabled or false
+            local PredictionStrength = PStrength or 0.1
+            local ProjectileSpeed = PSpeed or nil
+            local AStickyA = ASticky or false
+            local FovColor = AFovColor or Color3.fromRGB(200, 50, 50)
+
+            -- 🎯 Update FOV GUI dynamically
+            fovFrame.Size = UDim2.new(0, Fov, 0, Fov)
+            stroke.Color = FovColor
+
+            if ShowFov and Enabled then
                 local m = UIS:GetMouseLocation()
                 fovFrame.Position = UDim2.new(0, m.X, 0, m.Y - 36)
-                fovFrame.Size = UDim2.new(0, Aimbot.Fov, 0, Aimbot.Fov)
                 fovFrame.Visible = true
             else
                 fovFrame.Visible = false
             end
 
-            if Aimbot.Enabled and Aimbot.IsAimKeyDown then
-                local target = CameraGetClosestToMouse(Aimbot.Fov)
-                if target then
-                    aimAt(target, Aimbot.Smoothing)
+            -- Get team list (if used)
+            local teamMembers = TeamCheck and getTeamMembers() or {}
+
+            -- Determine which target to aim at (sticky or not)
+            local currentTarget = nil
+            if Enabled and IsAimKeyDown then
+                if AStickyA and stickyTarget and isValidTarget(stickyTarget, teamMembers, TeamCheck) then
+                    currentTarget = stickyTarget
+                else
+                    local found = getClosestToMouse(Fov, teamMembers, TeamCheck, WallCheck)
+                    if found then
+                        currentTarget = found
+                        if AStickyA then stickyTarget = found end
+                    else
+                        if AStickyA then stickyTarget = nil end
+                    end
+                end
+            else
+                stickyTarget = nil
+            end
+
+            -- ========= AIM PART HANDLING =========
+            local function getAimParts(char, aimMode)
+                if not char then return {} end
+                local parts = {}
+
+                local map = {
+                    ["Head"] = { "Head", "HeadTopHitBox", "FaceHitBox" },
+                    ["HumanoidRootPart"] = { "HumanoidRootPart", "UpperTorso", "LowerTorso" },
+                    ["LArm"] = { "LeftUpperArm", "LeftLowerArm", "LeftHand" },
+                    ["RArm"] = { "RightUpperArm", "RightLowerArm", "RightHand" },
+                    ["LLeg"] = { "LeftUpperLeg", "LeftLowerLeg", "LeftFoot" },
+                    ["RLeg"] = { "RightUpperLeg", "RightLowerLeg", "RightFoot" },
+                }
+
+                if aimMode == "All" then
+                    for _, list in pairs(map) do
+                        for _, name in ipairs(list) do
+                            local part = char:FindFirstChild(name)
+                            if part then table.insert(parts, part) end
+                        end
+                    end
+                elseif map[aimMode] then
+                    for _, name in ipairs(map[aimMode]) do
+                        local part = char:FindFirstChild(name)
+                        if part then table.insert(parts, part) end
+                    end
+                else
+                    local part = char:FindFirstChild(aimMode)
+                    if part then table.insert(parts, part) end
+                end
+
+                return parts
+            end
+
+            -- ========= MAIN AIM LOGIC =========
+            if currentTarget and currentTarget.Character then
+                local parts = getAimParts(currentTarget.Character, AimPart)
+                if #parts > 0 then
+                    -- choose closest to crosshair
+                    local closestPart, closestDist = nil, math.huge
+                    local mouse = UIS:GetMouseLocation()
+                    local mouseVec = Vector2.new(mouse.X, mouse.Y - 36)
+
+                    for _, part in ipairs(parts) do
+                        local v3, onScreen = safeWTVP(part.Position)
+                        if onScreen then
+                            local screenPos = Vector2.new(v3.X, v3.Y)
+                            local dist = (screenPos - mouseVec).Magnitude
+                            if dist < closestDist then
+                                closestDist = dist
+                                closestPart = part
+                            end
+                        end
+                    end
+
+                    if closestPart then
+                        local predicted = getPredictedPosition(currentTarget, closestPart.Position, dt, PredictionEnabled,
+                            ProjectileSpeed, PredictionStrength)
+                        if not WallCheck or isVisible(predicted, currentTarget.Character) then
+                            aimAtPosition(predicted, Smoothing)
+                        end
+                    end
+                end
+            end
+
+
+            -- Velocity tracking
+            for _, plr in pairs(Players:GetPlayers()) do
+                if plr.Character and plr.Character:FindFirstChild(AimPart) then
+                    prev[plr.UserId] = { pos = plr.Character[AimPart].Position, t = tick() }
+                else
+                    prev[plr.UserId] = nil
                 end
             end
         end)
+    end,
+})
 
+local AATeamCheck = ProjectDeltaTab:CreateToggle({
+    Name = "Check Team (Only ProjectDelta)",
+    CurrentValue = false,
+    Flag = "AATeamCheck", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+    Callback = function(Value)
         if Value then
-            Aimbot.Enabled = true
+            ATeamCheck = true
         else
-            Aimbot.Enabled = false
+            ATeamCheck = false
         end
+    end,
+})
+local AAWallCheck = ProjectDeltaTab:CreateToggle({
+    Name = "Wall Check(Soon)",
+    CurrentValue = false,
+    Flag = "AAWallCheck1", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+    Callback = function(Value)
+        if Value then
+            AWallCheck = true
+        else
+            AWallCheck = false
+        end
+    end,
+})
+local StickyAToggle = ProjectDeltaTab:CreateToggle({
+    Name = "Sticky Aimbot",
+    CurrentValue = true,
+    Flag = "StickyAToggle", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+    Callback = function(Value)
+        if Value then
+            ASticky = true
+        else
+            ASticky = false
+        end
+    end,
+})
+local AAPrediction = ProjectDeltaTab:CreateToggle({
+    Name = "Prediction (Beta)",
+    CurrentValue = false,
+    Flag = "AAPrediction", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+    Callback = function(Value)
+        if Value then
+            PEnabled = true
+        else
+            PEnabled = false
+        end
+    end,
+})
+local AFOVSIZESlider = ProjectDeltaTab:CreateSlider({
+    Name = "FOV Scare Size",
+    Range = { 1, 500 },
+    Increment = 1,
+    Suffix = "Studs",
+    CurrentValue = 80,
+    Flag = "AFOVSIZESlider", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+    Callback = function(Value)
+        AFov = Value
+    end,
+})
+local AStrengthSlider = ProjectDeltaTab:CreateSlider({
+    Name = "Aimbot Strength",
+    Range = { 0, 5 },
+    Increment = 0.1,
+    Suffix = "",
+    CurrentValue = 0.5,
+    Flag = "AStrengthSlider", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+    Callback = function(Value)
+        AStrength = Value
+    end,
+})
+local AIMPartChoose = ProjectDeltaTab:CreateDropdown({
+    Name = "Aimpart",
+    Options = { "Head", "HumanoidRootPart", "LArm", "RArm", "LLeg", "RLeg", "All" },
+    CurrentOption = { "Head" },
+    MultipleOptions = false,
+    Flag = "AIMPartChoose", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+    Callback = function(Options)
+        AAimpart = Options
+    end,
+})
+
+local NPCESPXToggle = ProjectDeltaTab:CreateToggle({
+    Name = "NPCESPX Toggle",
+    CurrentValue = false,
+    Flag = "NPCESPXToggle", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+    Callback = function(Value)
+        local RunService = game:GetService("RunService")
+        local Workspace = game:GetService("Workspace")
+        local Players = game:GetService("Players")
+        local LocalPlayer = Players.LocalPlayer
+
+        local AiZones = Workspace:WaitForChild("AiZones")
+
+        local npcNames = {
+            "OccupantSoldier", "Dozer", "Anton", "AntonGuard", "WastelandBandit",
+            "WastelandRat", "SniperBandit", "MarksmanBandit", "HighwayBandit", "HighwayRat",
+            "OccupantSurveyTeamMember", "OccupantSniper", "Whisper", "Death", "UNOPeaceKeeper"
+        }
+
+        local npcConns = {}
+        local activeNPCs = {}
+
+        local function isTargetNPC(name)
+            for _, target in ipairs(npcNames) do
+                if name == target then return true end
+            end
+            return false
+        end
+
+        local function removeESP(npc)
+            if npc:FindFirstChild("Highlight") then npc.Highlight:Destroy() end
+            local head = npc:FindFirstChild("Head")
+            if head and head:FindFirstChild("ESPInfo") then head.ESPInfo:Destroy() end
+        end
+
+        local function applyESPToNPC(npc)
+            if not npc or not npc:IsA("Model") then return end
+            if npc:GetAttribute("ESP_Applied") then return end
+            npc:SetAttribute("ESP_Applied", true)
+
+            local humanoid = npc:FindFirstChild("Humanoid") or npc:WaitForChild("Humanoid", 5)
+            local root = npc:FindFirstChild("HumanoidRootPart") or npc:FindFirstChild("Torso") or
+                npc:FindFirstChild("UpperTorso")
+            if not humanoid or not root then return end
+            local head = npc:FindFirstChild("Head") or root
+
+            removeESP(npc)
+
+            -- Highlight
+            local highlight = Instance.new("Highlight")
+            highlight.Adornee = npc
+            highlight.FillColor = Color3.fromRGB(0, 170, 255)
+            highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+            highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+            highlight.FillTransparency = 0.5
+            highlight.Parent = npc
+
+            -- Billboard
+            local bill = Instance.new("BillboardGui")
+            bill.Name = "ESPInfo"
+            bill.AlwaysOnTop = true
+            bill.Size = UDim2.new(0, 180, 0, 60)
+            bill.StudsOffset = Vector3.new(0, 4, 0)
+            bill.Parent = head
+
+            local label = Instance.new("TextLabel")
+            label.BackgroundTransparency = 1
+            label.Size = UDim2.new(1, 0, 1, 0)
+            label.TextColor3 = Color3.new(1, 1, 1)
+            label.TextStrokeTransparency = 0
+            label.Font = Enum.Font.SourceSansBold
+            label.TextScaled = true
+            label.Parent = bill
+
+            -- Update loop
+            local conn
+            conn = RunService.RenderStepped:Connect(function()
+                if not npc.Parent or humanoid.Health <= 0 or not ESPEnabled then
+                    label.Text = ""
+                    highlight.Enabled = false
+                    return
+                end
+
+                local distance = 0
+                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    distance = (root.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+                end
+
+                label.Text = string.format("%s\nHP: %d\n%d m", npc.Name, humanoid.Health, distance)
+                highlight.Enabled = true
+            end)
+
+            npcConns[npc] = conn
+            activeNPCs[npc] = true
+        end
+
+        -- Scan folders
+        local function scanFolders()
+            for _, folder in ipairs(AiZones:GetChildren()) do
+                if folder:IsA("Folder") then
+                    for _, npc in ipairs(folder:GetChildren()) do
+                        if npc:IsA("Model") and isTargetNPC(npc.Name) then
+                            applyESPToNPC(npc)
+                        end
+                    end
+
+                    folder.ChildAdded:Connect(function(npc)
+                        if npc:IsA("Model") and isTargetNPC(npc.Name) then
+                            applyESPToNPC(npc)
+                        end
+                    end)
+                end
+            end
+        end
+
+        -- Toggle function
+        ESPEnabled = false
+        function toggleNPCESP(state)
+            ESPEnabled = state
+
+            if ESPEnabled then
+                scanFolders()
+            else
+                -- Remove all ESP
+                for npc, conn in pairs(npcConns) do
+                    if conn then conn:Disconnect() end
+                    removeESP(npc)
+                    if npc then npc:SetAttribute("ESP_Applied", nil) end
+                end
+                npcConns = {}
+                activeNPCs = {}
+            end
+        end
+
+        -- Example usage: start ESP
+        toggleNPCESP(Value)
+    end,
+})
+local NPCAimbotXToggle = ProjectDeltaTab:CreateToggle({
+    Name = "NPC AimbotX Toggle",
+    CurrentValue = false,
+    Flag = "NPCAimbotXToggle ", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+    Callback = function(Value)
+        -- 🔥 NPC Head Aimbot (Humanoid check + auto-updating config + sticky + AiZones)
+        -- LocalScript -> StarterPlayerScripts
+
+        local RunService = game:GetService("RunService")
+        local UIS = game:GetService("UserInputService")
+        local Players = game:GetService("Players")
+        local Workspace = game:GetService("Workspace")
+        local PLAYER = Players.LocalPlayer
+
+        local AiZones = Workspace:WaitForChild("AiZones")
+
+        -- NPC Names to target
+        local npcNames = {
+            "OccupantSoldier", "Dozer", "Anton", "AntonGuard", "WastelandBandit",
+            "WastelandRat", "SniperBandit", "MarksmanBandit", "HighwayBandit", "HighwayRat",
+            "OccupantSurveyTeamMember", "OccupantSniper", "Whisper", "Death", "UNOPeaceKeeper"
+        }
+
+        local function isTargetNPC(name)
+            for _, npc in ipairs(npcNames) do
+                if name == npc then return true end
+            end
+            return false
+        end
+
+        -- ========= STATE =========
+        local Enabled = true
+        local IsAimKeyDown = false
+        local prev = {}
+        local stickyTarget = nil
+
+        -- ========= FOV GUI =========
+        local gui = Instance.new("ScreenGui")
+        gui.Name = "NPCAimbotGui"
+        gui.Parent = PLAYER:WaitForChild("PlayerGui")
+        gui.ResetOnSpawn = false
+
+        local fovFrame = Instance.new("Frame")
+        fovFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+        fovFrame.BackgroundTransparency = 1
+        fovFrame.Parent = gui
+
+        local stroke = Instance.new("UIStroke")
+        stroke.Thickness = 1
+        stroke.Parent = fovFrame
+
+        -- ========= HELPERS =========
+        local function safeWTVP(pos)
+            if not workspace.CurrentCamera then return nil, false end
+            return workspace.CurrentCamera:WorldToViewportPoint(pos)
+        end
+
+        local function isVisible(worldPos, ...)
+            local camera = workspace.CurrentCamera
+            if not camera then return true end
+            local ignore = { camera }
+            for _, v in ipairs({ ... }) do
+                if v then table.insert(ignore, v) end
+            end
+            local parts = camera:GetPartsObscuringTarget({ worldPos }, ignore)
+            return #parts == 0
+        end
+
+        local function estimateVelocity(npc, newPos, dt)
+            local uid = npc:GetDebugId() or npc:GetHashCode()
+            local p = prev[uid]
+            if not p or not dt or dt <= 0 then
+                return Vector3.new(0, 0, 0)
+            end
+            return (newPos - p.pos) / dt
+        end
+
+        local function computeLead(pos, vel, fromPos, projectileSpeed, predictionStrength)
+            if projectileSpeed and projectileSpeed > 0 and fromPos then
+                local dist = (pos - fromPos).Magnitude
+                local t = dist / projectileSpeed
+                return vel * t
+            else
+                return vel * predictionStrength
+            end
+        end
+
+        local function getPredictedPosition(npc, aimPartPos, dt, predictionEnabled, projectileSpeed, predictionStrength)
+            if not predictionEnabled or not dt then return aimPartPos end
+            local vel = estimateVelocity(npc, aimPartPos, dt)
+            local hrp = PLAYER.Character and PLAYER.Character:FindFirstChild("HumanoidRootPart")
+            local lead = computeLead(aimPartPos, vel, hrp and hrp.Position or nil, projectileSpeed, predictionStrength)
+            return aimPartPos + lead
+        end
+
+        local function aimAtPosition(worldPos, smooth)
+            if not worldPos or not workspace.CurrentCamera then return end
+            local hrp = PLAYER.Character and PLAYER.Character:FindFirstChild("HumanoidRootPart")
+            if not hrp then return end
+
+            local distance = (hrp.Position - worldPos).Magnitude
+            local distFactor = math.max(1, distance / 10)
+            local offset = -smooth * distFactor
+            local cam = workspace.CurrentCamera.CFrame
+            local worldPoint = cam:PointToWorldSpace(Vector3.new(0, 0, offset))
+            local lookAt = worldPoint:Lerp(worldPos, 0.01)
+            workspace.CurrentCamera.CFrame = CFrame.lookAt(cam.Position, lookAt)
+        end
+
+        local function isValidTarget(npc)
+            if not npc or not npc:IsA("Model") then return false end
+            local humanoid = npc:FindFirstChild("Humanoid")
+            local head = npc:FindFirstChild("Head")
+            if not humanoid or humanoid.Health <= 0 or not head then return false end
+            if not isTargetNPC(npc.Name) then return false end
+            return true
+        end
+
+        -- ========= TARGET SELECTION =========
+        local function getClosestToMouse(fov, wallCheck)
+            local aimFov = fov
+            local target = nil
+            local mouse = UIS:GetMouseLocation()
+            local mouseVec = Vector2.new(mouse.X, mouse.Y - 36)
+
+            for _, folder in ipairs(AiZones:GetChildren()) do
+                if folder:IsA("Folder") then
+                    for _, npc in ipairs(folder:GetChildren()) do
+                        local humanoid = npc:FindFirstChild("Humanoid")
+                        if humanoid and isValidTarget(npc) then
+                            local head = npc:FindFirstChild("Head")
+                            if head then
+                                local v3, onScreen = safeWTVP(head.Position)
+                                if onScreen then
+                                    local screenPos = Vector2.new(v3.X, v3.Y)
+                                    local dist = (screenPos - mouseVec).Magnitude
+                                    if dist < aimFov then
+                                        if not wallCheck or isVisible(head.Position, npc) then
+                                            aimFov = dist
+                                            target = npc
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+
+            return target
+        end
+
+        -- ========= INPUT =========
+        UIS.InputBegan:Connect(function(input, processed)
+            if processed then return end
+            if input.UserInputType == Enum.UserInputType.MouseButton2 then
+                IsAimKeyDown = true
+            end
+            if input.KeyCode == Enum.KeyCode.RightControl then
+                Enabled = not Enabled
+                print("NPC Head Aimbot", Enabled and "ON" or "OFF")
+            end
+        end)
+
+        UIS.InputEnded:Connect(function(input, processed)
+            if processed then return end
+            if input.UserInputType == Enum.UserInputType.MouseButton2 then
+                IsAimKeyDown = false
+                stickyTarget = nil
+            end
+        end)
+
+        -- ========= MAIN LOOP =========
+        RunService.RenderStepped:Connect(function(dt)
+            local ShowFov = _G.AShowFov or true
+            local Fov = _G.AFov or 80
+            local Smoothing = _G.ASmoothing or 0
+            local PredictionEnabled = _G.PEnabled or false
+            local PredictionStrength = _G.PStrength or 0.1
+            local ProjectileSpeed = _G.PSpeed or nil
+            local AStickyA = _G.ASticky or false
+            local FovColor = _G.AFovColor or Color3.fromRGB(200, 50, 50)
+            local WallCheck = _G.AWallCheck or false
+
+            fovFrame.Size = UDim2.new(0, Fov, 0, Fov)
+            stroke.Color = FovColor
+            if ShowFov and Enabled then
+                local m = UIS:GetMouseLocation()
+                fovFrame.Position = UDim2.new(0, m.X, 0, m.Y - 36)
+                fovFrame.Visible = true
+            else
+                fovFrame.Visible = false
+            end
+
+            -- Determine target
+            local currentTarget = nil
+            if Enabled and IsAimKeyDown then
+                if AStickyA and stickyTarget and isValidTarget(stickyTarget) then
+                    currentTarget = stickyTarget
+                else
+                    local found = getClosestToMouse(Fov, WallCheck)
+                    if found then
+                        currentTarget = found
+                        if AStickyA then stickyTarget = found end
+                    else
+                        if AStickyA then stickyTarget = nil end
+                    end
+                end
+            else
+                stickyTarget = nil
+            end
+
+            -- Aim at NPC head
+            if currentTarget then
+                local head = currentTarget:FindFirstChild("Head")
+                if head then
+                    local predicted = getPredictedPosition(currentTarget, head.Position, dt, PredictionEnabled,
+                        ProjectileSpeed, PredictionStrength)
+                    if not WallCheck or isVisible(predicted, currentTarget) then
+                        aimAtPosition(predicted, Smoothing)
+                    end
+                end
+            end
+
+            -- Track previous positions for prediction
+            for _, folder in ipairs(AiZones:GetChildren()) do
+                if folder:IsA("Folder") then
+                    for _, npc in ipairs(folder:GetChildren()) do
+                        local humanoid = npc:FindFirstChild("Humanoid")
+                        local head = npc:FindFirstChild("Head")
+                        if humanoid and head then
+                            local uid = npc:GetDebugId() or npc:GetHashCode()
+                            prev[uid] = { pos = head.Position, t = tick() }
+                        end
+                    end
+                end
+            end
+        end)
     end,
 })
